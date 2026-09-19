@@ -1,0 +1,8 @@
+{
+  "source": "DEMO registry — sample data for the three demo labels. Replace with a real feed (e.g. GS1 India DataKart or manufacturer-submitted master data) before any enforcement use.",
+  "products": {
+    "8901234100011": {"brand": "Golden Harvest", "name": "Basmati Rice", "net_quantity": "1 kg", "mrp": 145.00, "manufacturer": "Golden Harvest Foods Pvt. Ltd., Pune"},
+    "8901234100028": {"brand": "Shree Gold", "name": "Kachi Ghani Mustard Oil", "net_quantity": "1 L", "mrp": 199.00, "manufacturer": "Shree Oil Mills, Jaipur"},
+    "8901234100035": {"brand": "Pure Leaf", "name": "Neem Face Wash", "net_quantity": "100 ml", "mrp": 199.00, "manufacturer": "Pure Leaf Herbals Pvt. Ltd., Gurugram"}
+  }
+}

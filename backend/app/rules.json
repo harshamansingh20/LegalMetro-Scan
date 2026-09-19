@@ -1,0 +1,156 @@
+{
+  "version": "2026.09-3",
+  "source": "Legal Metrology (Packaged Commodities) Rules, 2011 — Rule 6 mandatory declarations (English labels)",
+  "review_threshold": 0.8,
+  "notes": "Regexes are case-insensitive. 'required': true | 'conditional'. Check 'severity': 'fail' or 'review'. 'target': 'context' (default, keyword line + lookahead) or 'value'. 'stop_keywords' end a multi-line capture. 'min_height_ratio' compares the field's text height to the label's median (body) text height — approximate, not calibrated. 'unit_price_consistency' recomputes MRP / net quantity and compares it to the declared unit price within 'tolerance'. 'side_pattern' (optional) is used when the value sits in a column to the right of its label; defaults to value_pattern. 'fallback': 'pin_address' | 'tallest_text'.",
+  "stop_keywords": ["country of origin", "ingredients", "nutrition", "nutritional information", "best before", "use by", "expiry", "batch no", "batch", "storage", "allergen", "veg", "fssai", "lic. no"],
+  "fields": [
+    {
+      "id": "manufacturer",
+      "label": "Name & address of manufacturer / packer / importer",
+      "rule_ref": "Rule 6(1)(a)",
+      "description": "Name and complete address (with PIN code) of the manufacturer, packer or importer.",
+      "pass_message": "Manufacturer/packer name and address declared, with a PIN code.",
+      "required": true,
+      "extract": {
+        "keywords": ["manufactured by", "manufactured & packed by", "mfd. & packed by", "mfd. by", "mfd by", "mfg. by", "mfg by", "packed by", "pkd. by", "pkd by", "marketed by", "mktd. by", "mktd by", "imported by", "manufacturer", "packer", "importer"],
+        "lookahead": 2,
+        "fallback": "pin_address"
+      },
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "\\b\\d{3}\\s?\\d{3}\\b",
+          "severity": "fail",
+          "message": "Address should include a 6-digit PIN code"
+        }
+      ]
+    },
+    {
+      "id": "commodity_name",
+      "label": "Common / generic name of the commodity",
+      "rule_ref": "Rule 6(1)(b)",
+      "description": "Common or generic name of the commodity inside the package.",
+      "pass_message": "Generic commodity name declared.",
+      "required": true,
+      "extract": {
+        "keywords": ["name of the commodity", "name of commodity", "generic name", "commodity", "product name"],
+        "lookahead": 0,
+        "terms": ["rice", "atta", "wheat flour", "flour", "maida", "besan", "sugar", "salt", "tea", "coffee", "oil", "ghee", "butter", "milk", "biscuits", "cookies", "chips", "namkeen", "noodles", "pasta", "dal", "pulses", "spices", "masala", "turmeric", "chilli powder", "detergent", "soap", "face wash", "body wash", "hand wash", "lotion", "cream", "hair oil", "talc", "powder", "shampoo", "toothpaste", "juice", "water", "soft drink", "chocolate", "sweets", "cereal", "oats", "jam", "sauce", "ketchup", "pickle", "honey", "savouries", "savoury", "nachos", "wafers", "crisps", "bhujia", "corn chips", "tortilla chips"],
+        "fallback": "tallest_text"
+      },
+      "checks": []
+    },
+    {
+      "id": "net_quantity",
+      "label": "Net quantity (standard units)",
+      "rule_ref": "Rule 6(1)(c)",
+      "description": "Net quantity in standard units of weight, measure or number (g, kg, ml, L, N).",
+      "pass_message": "Net quantity declared in a standard unit.",
+      "required": true,
+      "extract": {
+        "keywords": ["net quantity", "net qty", "net wt", "net weight", "net content", "net contents", "net vol", "net volume", "net mass", "net"],
+        "lookahead": 1,
+        "value_pattern": "\\d+(?:\\.\\d+)?\\s*(?:kgs?|gms?|grams?|g|mg|ml|ltrs?|litres?|liters?|lt|l|cl|pcs|units?|n)\\b"
+      },
+      "checks": [
+        {
+          "type": "not_regex",
+          "target": "value",
+          "pattern": "\\d\\s*(?:gms?|kgs|ltrs?|lt)\\b",
+          "severity": "fail",
+          "message": "Non-standard unit symbol — use g, kg, mg, ml or L (not gm/gms/kgs/ltr)"
+        },
+        {
+          "type": "min_height_ratio",
+          "value": 0.8,
+          "severity": "review",
+          "message": "Net quantity text looks smaller than the label's normal body text (approximate — no physical calibration)"
+        }
+      ]
+    },
+    {
+      "id": "packing_date",
+      "label": "Month & year of manufacture / packing / import",
+      "rule_ref": "Rule 6(1)(d)",
+      "description": "Month and year of manufacture, packing or import.",
+      "pass_message": "Month/year of manufacture or packing declared.",
+      "required": true,
+      "extract": {
+        "keywords": ["month & year", "month and year", "mfd. on", "mfd on", "mfg. date", "mfg date", "date of mfg", "date of manufacture", "manufactured on", "pkd. on", "pkd on", "packed on", "date of packing", "packing date", "pkd", "mfd", "mfg", "month of import", "imported on"],
+        "lookahead": 1,
+        "value_pattern": "(?<![\\d/])(?:\\d{1,2}[/.\\-]\\d{1,2}[/.\\-](?:20)?\\d{2}|(?:0?[1-9]|1[0-2])[/.\\-](?:20)?\\d{2}|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec)[a-z]*[\\s./\\-']*(?:20)?\\d{2})(?![\\d/])",
+        "require_value": true
+      },
+      "checks": []
+    },
+    {
+      "id": "mrp",
+      "label": "Retail sale price (MRP) incl. of all taxes",
+      "rule_ref": "Rule 6(1)(e)",
+      "description": "Retail sale price as Maximum Retail Price (MRP), stated as inclusive of all taxes.",
+      "pass_message": "MRP declared, inclusive of all taxes.",
+      "required": true,
+      "extract": {
+        "keywords": ["maximum retail price", "m.r.p.", "m.r.p", "mrp", "retail price"],
+        "lookahead": 1,
+        "value_pattern": "(?:rs\\.?|₹|inr)?\\s*\\d+(?:\\.\\d{1,2})?",
+        "side_pattern": "(?:rs\\.?|₹|inr)\\s*\\d+(?:[.,]\\d{1,2})?"
+      },
+      "checks": [
+        {
+          "type": "regex",
+          "pattern": "incl(?:usive|\\.)?\\s*(?:of)?\\s*all\\s*taxes",
+          "severity": "fail",
+          "message": "MRP must be declared 'inclusive of all taxes'"
+        }
+      ]
+    },
+    {
+      "id": "consumer_care",
+      "label": "Consumer care details (phone / email)",
+      "rule_ref": "Rule 6(1)(f)",
+      "description": "Consumer care details: telephone number and/or email for complaints.",
+      "pass_message": "Consumer care contact (phone/email) declared.",
+      "required": true,
+      "extract": {
+        "keywords": ["consumer care", "customer care", "consumer complaints", "customer service", "complaints", "helpline", "toll free", "contact us", "contact"],
+        "lookahead": 2,
+        "value_pattern": "[\\w.+\\-]+@[\\w\\-]+\\.[\\w.]+|(?<!\\d)(?:\\+91[\\s\\-]?)?(?:1800[\\s\\-]?\\d{3}[\\s\\-]?\\d{4}|\\d{10}|\\d{5}[\\s\\-]\\d{5}|0?\\d{2,4}[\\s\\-]\\d{6,8})(?!\\d)",
+        "pattern_anywhere": true
+      },
+      "checks": []
+    },
+    {
+      "id": "unit_sale_price",
+      "label": "Unit sale price (e.g. Rs./kg) — applicable categories",
+      "rule_ref": "Rule 6(1)(e) proviso",
+      "description": "Unit sale price (e.g. Rs. per kg / per 100 g) — must equal MRP divided by net quantity.",
+      "pass_message": "Unit sale price declared and consistent with MRP / net quantity.",
+      "required": "conditional",
+      "extract": {
+        "keywords": ["unit sale price", "unit price", "usp"],
+        "lookahead": 1,
+        "value_pattern": "(?:rs\\.?|₹|inr)?\\s*\\d+(?:[.,]\\d+)?\\s*(?:/|per)\\s*(?:\\d+\\s*)?(?:kg|g|ml|l|unit|piece|pc)\\b",
+        "pattern_anywhere": true
+      },
+      "checks": [
+        {
+          "type": "unit_price_consistency",
+          "tolerance": 0.02,
+          "severity": "fail",
+          "message": "Unit sale price doesn't match MRP / net quantity"
+        }
+      ]
+    }
+  ],
+  "clause_ref_note": "Rule/clause references are indicative for the demo — verify against the current consolidated Legal Metrology (Packaged Commodities) Rules, 2011 before citing them in a notice.",
+  "penalties": {
+    "section": "Section 36(1), Legal Metrology Act, 2009",
+    "offence": "Selling/distributing a pre-packaged commodity whose package does not carry the required declarations",
+    "first_offence_max": 25000,
+    "second_offence_max": 50000,
+    "subsequent": "Rs. 50,000 to Rs. 1,00,000, or imprisonment up to 1 year, or both",
+    "note": "Indicative maximum fine for a first offence, shown only when the label is likely non-compliant. The actual penalty is decided by the competent authority; check the Act as amended (incl. the Jan Vishwas Act, 2023) before relying on these figures."
+  }
+}
